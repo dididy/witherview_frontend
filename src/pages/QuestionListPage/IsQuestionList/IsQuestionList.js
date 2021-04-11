@@ -61,18 +61,23 @@ export default function IsQuestionList({ questionList, handleDelete }) {
             </AddQuestionList>
           </Link>
         </ItemWrapper>
-        {questionList?.map((val, index) => {
+        {questionList?.map(async ({ id, title, enterprise }, index) => {
           const [count, setCount] = useState(0);
-          getQuestionItemAPI(val.id).then((response) => {
-            setCount(response.data.length);
-          });
+          try {
+            const { data } = await getQuestionItemAPI(id);
+            setCount(data.length);
+          } catch (error) {
+            console.error(error);
+            alert(error);
+          }
+
           return (
             <ItemWrapper key={`itemQ-${index}`}>
               <O.QuestionCardView
-                id={val.id}
+                id={id}
                 number={count}
-                title={val.title}
-                description={val.enterprise}
+                title={title}
+                description={enterprise}
                 questionList={questionList}
                 handleDelete={handleDelete}
               />
