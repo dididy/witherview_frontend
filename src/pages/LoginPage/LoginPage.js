@@ -1,6 +1,5 @@
 /* eslint-disable no-useless-escape */
 import React, { useState } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
 import { Redirect } from 'react-router-dom';
 
 import ReactRouterPropTypes from 'react-router-prop-types';
@@ -8,9 +7,7 @@ import ReactRouterPropTypes from 'react-router-prop-types';
 import styled from 'styled-components';
 
 import witherviewLogo from '@assets/images/witherview_logo_title_dark.png';
-import { get } from '@utils/snippet';
-import { setLogin } from '@store/Auth/auth';
-import { loginApi } from '@repository/loginRepository';
+import { loginApi } from '@repository/accountRepository';
 
 import A from '@atoms';
 
@@ -109,11 +106,9 @@ const WrapMiddleText = styled.div`
   font-family: AppleSDGothicNeoM00;
   font-size: 2vh;
   color: #9e9e9e;
-  pointer-events: none;
 `;
 
 const WrapMiddleTextRight = styled(WrapMiddleText)`
-  user-select: none;
   &:hover {
     border-bottom: 0.1vh solid #9e9e9e;
   }
@@ -152,14 +147,11 @@ const EMPTY_FORM = {
 };
 
 const TEST_FORM = {
-  email: 'test@test.com',
+  email: 'test7@test.com',
   password: '123456',
 };
 
 export default function LoginPage({ history }) {
-  const dispatch = useDispatch();
-  const authSelector = useSelector(get('auth'));
-
   const { ratio } = useWindowSize();
 
   const [loginForm, setLoginForm] = useState(EMPTY_FORM);
@@ -173,16 +165,18 @@ export default function LoginPage({ history }) {
     });
   };
 
-  const handleLogin = () => {
-    loginApi(JSON.stringify(loginForm))
-      .then((response) => {
-        const email = JSON.stringify(response.data.email).replace(/\"/g, '');
-        const name = JSON.stringify(response.data.name).replace(/\"/g, '');
-        dispatch(setLogin({ email, name }));
-      })
-      .catch(() => {
-        alert('로그인 실패');
-      });
+  const handleLogin = async () => {
+    try {
+      const {
+        data: { access_token: accessToken },
+      } = await loginApi(JSON.stringify(loginForm));
+
+      sessionStorage.setItem('accessToken', accessToken);
+      history.push('/self');
+    } catch (error) {
+      console.error(error);
+      alert(error);
+    }
   };
 
   const handleCheck = (e) => {
@@ -196,7 +190,9 @@ export default function LoginPage({ history }) {
 
   return (
     <Wrapper>
-      {authSelector.isLogin && <Redirect to="/self" />}
+      {sessionStorage.getItem('accessToken') !== null && (
+        <Redirect to="/self" />
+      )}
       <WrapContent>
         <Logo src={witherviewLogo} alt="logo" />
         <WrapSubTitle>위더뷰가 처음이신가요? 정보를 입력해주세요.</WrapSubTitle>
@@ -233,8 +229,9 @@ export default function LoginPage({ history }) {
                 <WrapMiddleText>테스트 계정 사용</WrapMiddleText>
               </WrapMiddlePart>
               {ratio > 0.65 && (
-                <WrapMiddleTextRight onClick={() => {}}>
-                  {/* TODO: onClick history.push로 이동하는 부분으로 변경 */}
+                <WrapMiddleTextRight
+                  onClick={() => history.push('/password-find')}
+                >
                   비밀번호 찾기
                 </WrapMiddleTextRight>
               )}
